@@ -24,7 +24,7 @@ func main() {
 	}
 
 	httpSrv := api.NewServer(cfg, userClient, postClient, storageClient)
-	err = httpSrv.Start(":" + cfg.ApiServiceServerPort)
+	err = httpSrv.Start(cfg.ApiServiceServerPort)
 	if err != nil {
 		log.Fatalf("failed to start API server: %v", err)
 	}

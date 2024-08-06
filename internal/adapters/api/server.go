@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -22,6 +23,9 @@ func NewServer(cfg *config.Config,
 	storageClient *clients.StorageClient) *Server {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(middleware.RequestID)
 
 	s := &Server{
 		router:        r,
@@ -31,8 +35,7 @@ func NewServer(cfg *config.Config,
 		cfg:           cfg,
 	}
 
-	r.Route("user", func(r chi.Router) {
-		r.Post("/register", s.UserRegister)
+	r.Route("/user", func(r chi.Router) {
 		r.Post("/login/send_code", s.UserLoginSendCode)
 		r.Post("/login/", s.UserLogin)
 		r.Get("/show/{id}", s.UserShow)

@@ -5,9 +5,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: mego_api
-    depends_on:
-      - postgres
-      - redis
     ports:
       - "${API_SERVICE_SERVER_PORT}:${API_SERVICE_SERVER_PORT}"
     networks:

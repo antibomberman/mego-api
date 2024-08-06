@@ -7,8 +7,7 @@ import (
 )
 
 type UserClient struct {
-	User pb.UserServiceClient
-	Auth pb.AuthServiceClient
+	pb.UserServiceClient
 }
 
 func NewUserClient(address string) (*UserClient, error) {
@@ -16,5 +15,5 @@ func NewUserClient(address string) (*UserClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &UserClient{User: pb.NewUserServiceClient(conn), Auth: pb.NewAuthServiceClient(conn)}, nil
+	return &UserClient{pb.NewUserServiceClient(conn)}, nil
 }
