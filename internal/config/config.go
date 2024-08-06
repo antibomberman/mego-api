@@ -6,8 +6,6 @@ import (
 )
 
 type Config struct {
-	RedisPort string `env:"REDIS_PORT" required:"true"`
-
 	JWTSecret             string `env:"JWT_SECRET" required:"true"`
 	ApiServiceServerPort  string `env:"API_SERVICE_SERVER_PORT" required:"true"`
 	UserServiceAddress    string `env:"USER_SERVICE_ADDRESS" required:"true"`

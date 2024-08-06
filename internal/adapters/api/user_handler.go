@@ -13,6 +13,7 @@ func (s *Server) UserRegister(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UserLoginSendCode(w http.ResponseWriter, r *http.Request) {
 
 }
+
 func (s *Server) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 }
@@ -25,9 +26,11 @@ func (s *Server) UserShow(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Success(w, 200, "Пользователь успешно получен", userDetail)
 }
+
 func (s *Server) UserUpdate(w http.ResponseWriter, r *http.Request) {
 
 }
+
 func (s *Server) UserMe(w http.ResponseWriter, r *http.Request) {
 
 }
