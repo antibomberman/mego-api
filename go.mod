@@ -3,7 +3,7 @@ module github.com/antibomberman/mego-api
 go 1.22.5
 
 require (
-	github.com/antibomberman/mego-protos v0.0.48
+	github.com/antibomberman/mego-protos v0.0.56
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	google.golang.org/grpc v1.65.0
@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
