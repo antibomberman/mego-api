@@ -14,6 +14,10 @@ github.com/antibomberman/mego-protos v0.0.55 h1:at9wOkeMx96rKo9TmfFLkFtQijRLtMe0
 github.com/antibomberman/mego-protos v0.0.55/go.mod h1:VPMBG3z+MOzBSAyIqD1tWXYVDSv20kHozawJ7Tc8F7Y=
 github.com/antibomberman/mego-protos v0.0.56 h1:R+Vlhdd4qpaQf7q61VGRGHbFIZ7ADUn8x+La0FhPXuQ=
 github.com/antibomberman/mego-protos v0.0.56/go.mod h1:VPMBG3z+MOzBSAyIqD1tWXYVDSv20kHozawJ7Tc8F7Y=
+github.com/antibomberman/mego-protos v0.0.58 h1:NqB+bnjgqFPANKV7S+UDr3P28yicj+3PAQr9NnF+wSw=
+github.com/antibomberman/mego-protos v0.0.58/go.mod h1:VPMBG3z+MOzBSAyIqD1tWXYVDSv20kHozawJ7Tc8F7Y=
+github.com/antibomberman/mego-protos v0.0.72 h1:4XV9Opg3kCdNciQx+ZejDwq8GfBMpjsFb6X7c8ZiqzU=
+github.com/antibomberman/mego-protos v0.0.72/go.mod h1:VPMBG3z+MOzBSAyIqD1tWXYVDSv20kHozawJ7Tc8F7Y=
 github.com/go-chi/chi/v5 v5.1.0 h1:acVI1TYaD+hhedDJ3r54HyA6sExp3HfXq7QWEEY/xMw=
 github.com/go-chi/chi/v5 v5.1.0/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=

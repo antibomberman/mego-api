@@ -45,6 +45,10 @@ func NewServer(cfg *config.Config, authClient *clients.AuthClient, userClient *c
 			r.Use(localMiddleware.JwtMiddleware)
 			r.Get("/me", s.UserMe)
 			r.Post("/update/profile", s.UserUpdateProfile)
+			r.Post("/update/theme", s.UserUpdateTheme)
+			r.Post("/update/lang", s.UserUpdateLang)
+			r.Post("/update/email/send_code", s.UserUpdateEmailSendCode)
+			r.Post("/update/email", s.UserUpdateEmail)
 
 		})
 	})
