@@ -32,6 +32,7 @@ func (s *Server) UserMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userDetail, err := s.userClient.GetById(r.Context(), &userPb.Id{Id: id})
+	fmt.Println(userDetail)
 	if err != nil {
 		response.Fail(w, 400, "Ошибка получения пользовательской информации")
 		return

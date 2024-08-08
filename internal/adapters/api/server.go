@@ -58,6 +58,8 @@ func NewServer(cfg *config.Config, authClient *clients.AuthClient, userClient *c
 		r.Group(func(r chi.Router) {
 			r.Use(localMiddleware.JwtMiddleware)
 			r.Post("/", s.PostCreate)
+			r.Get("/my", s.PostMyList)
+			r.Get("/show/{id}", s.PostShow)
 			r.Put("/{id}", s.PostUpdate)
 			r.Delete("/{id}", s.PostDelete)
 		})
