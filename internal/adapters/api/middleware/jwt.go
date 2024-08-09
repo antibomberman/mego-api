@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
@@ -35,7 +34,6 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
-		fmt.Println(claims["user_id"])
 		if !ok {
 			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 			return

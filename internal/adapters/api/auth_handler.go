@@ -9,29 +9,29 @@ import (
 func (s *Server) AuthLoginSendCode(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	if email == "" {
-		response.Fail(w, http.StatusBadRequest, "Поле email обязательно для заполнения")
+		response.Fail(w, "Поле email обязательно для заполнения")
 		return
 	}
 	_, err := s.authClient.LoginByEmailSendCode(r.Context(), &pb.LoginByEmailSendCodeRequest{
 		Email: email,
 	})
 	if err != nil {
-		response.Fail(w, http.StatusInternalServerError, err.Error())
+		response.Fail(w, err.Error())
 		return
 	}
-	response.Success(w, http.StatusOK, "Код отправлен на вашу электронную почту", nil)
+	response.Success(w, "Код отправлен на вашу электронную почту", nil)
 }
 
 func (s *Server) AuthLogin(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("email")
 	if email == "" {
-		response.Fail(w, http.StatusBadRequest, "Поле email обязательно для заполнения")
+		response.Fail(w, "Поле email обязательно для заполнения")
 		return
 	}
 	code := r.FormValue("code")
 	if code == "" {
-		response.Fail(w, http.StatusBadRequest, "Поле код обязательно для заполнения")
+		response.Fail(w, "Поле код обязательно для заполнения")
 		return
 	}
 	body, err := s.authClient.LoginByEmail(r.Context(), &pb.LoginByEmailRequest{
@@ -39,9 +39,9 @@ func (s *Server) AuthLogin(w http.ResponseWriter, r *http.Request) {
 		Code:  code,
 	})
 	if err != nil {
-		response.Fail(w, http.StatusInternalServerError, err.Error())
+		response.Fail(w, err.Error())
 		return
 	}
-	response.Success(w, http.StatusOK, "Авторизация успешна", body)
+	response.Success(w, "Авторизация успешна", body)
 
 }
