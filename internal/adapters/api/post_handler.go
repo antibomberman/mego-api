@@ -23,9 +23,6 @@ func (s *Server) PostList(w http.ResponseWriter, r *http.Request) {
 		response.Fail(w, "Неверный размер страницы")
 		return
 	}
-
-	fmt.Println("Размер страницы: ", pageSize)
-
 	pageToken := r.URL.Query().Get("page_token")
 	search := r.URL.Query().Get("search")
 	sortStr := r.URL.Query().Get("sort")
