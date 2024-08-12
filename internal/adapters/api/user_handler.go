@@ -1,14 +1,15 @@
 package api
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/antibomberman/mego-api/pkg/response"
 	userPb "github.com/antibomberman/mego-protos/gen/go/user"
 	"github.com/go-chi/chi/v5"
-	"io"
+	"github.com/go-playground/validator/v10"
 	"log"
 	"net/http"
-	"strings"
 )
 
 func (s *Server) UserShow(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +25,6 @@ func (s *Server) UserShow(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Success(w, "Пользователь успешно получен", userDetail)
 }
-
 func (s *Server) UserMe(w http.ResponseWriter, r *http.Request) {
 	id := r.Context().Value("user_id").(string)
 	if id == "" {
@@ -39,33 +39,44 @@ func (s *Server) UserMe(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Success(w, "Пользователь успешно получен", userDetail)
 }
-
 func (s *Server) UserUpdateProfile(w http.ResponseWriter, r *http.Request) {
+	type AvatarRequest struct {
+		FileName string `json:"file_name"`
+		Data     string `json:"data"` // base64 encoded
+	}
+	type Data struct {
+		FirstName  string         `json:"first_name" valid:"required"`
+		MiddleName string         `json:"middle_name"`
+		LastName   string         `json:"last_name"`
+		About      string         `json:"about"`
+		Avatar     *AvatarRequest `json:"avatar"`
+	}
+	var data Data
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		response.Fail(w, "Ошибка при десериализации тела запроса")
+		return
+	}
+	validate := validator.New()
+	err = validate.Struct(data)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			response.Fail(w, fmt.Sprintf("Ошибка валидации поля: %s", err.Field()))
+			return
+		}
+	}
 	pbAvatar := &userPb.NewAvatar{}
 
-	file, header, err := r.FormFile("avatar")
-	if err == nil {
-
-		if !strings.HasPrefix(header.Header.Get("Content-Type"), "image/") {
-			response.Fail(w, "Недопустимый тип файла для аватара")
-			return
-		}
-		if header.Size > 5*1024*1024 {
-			response.Fail(w, "Размер файла превышен")
-			return
-		}
-
-		avatarData, err := io.ReadAll(file)
+	if data.Avatar != nil {
+		fileBytes, err := base64.StdEncoding.DecodeString(data.Avatar.Data)
 		if err != nil {
-			response.Fail(w, "Ошибка при чтении файла аватара")
+			response.Fail(w, "Ошибка при декодировании файла аватара")
 			return
 		}
-		pbAvatar.FileName = header.Filename
-		pbAvatar.Data = avatarData
-		pbAvatar.ContentType = header.Header.Get("Content-Type")
-
-		fmt.Println("avatar ContentType : " + pbAvatar.ContentType)
-		defer file.Close()
+		contentType := http.DetectContentType(fileBytes)
+		pbAvatar.Data = fileBytes
+		pbAvatar.ContentType = contentType
+		pbAvatar.FileName = data.Avatar.FileName
 	}
 
 	if pbAvatar.Data == nil {
@@ -74,32 +85,40 @@ func (s *Server) UserUpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	profile, err := s.userClient.UpdateProfile(r.Context(), &userPb.UpdateProfileRequest{
 		Id:         r.Context().Value("user_id").(string),
-		FirstName:  r.FormValue("first_name"),
-		MiddleName: r.FormValue("middle_name"),
-		LastName:   r.FormValue("last_name"),
-		About:      r.FormValue("about"),
+		FirstName:  data.FirstName,
+		MiddleName: data.MiddleName,
+		LastName:   data.LastName,
+		About:      data.About,
 		Avatar:     pbAvatar,
 	})
 	if err != nil {
-		log.Printf("Error updating user profile: %v\n", err)
 		response.Fail(w, "Ошибка при изменении профиля")
 		return
 	}
 	response.Success(w, "Профиль успешно изменен", profile)
 }
 func (s *Server) UserUpdateTheme(w http.ResponseWriter, r *http.Request) {
-	theme := r.FormValue("theme")
-	if theme == "" {
-		response.Fail(w, "Не указан тема")
+	type Data struct {
+		Theme string `json:"theme" valid:"required,oneof=light dark system"`
+	}
+	var data Data
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		response.Fail(w, "Ошибка при десериализации тела запроса")
 		return
 	}
-	if theme != "light" && theme != "dark" && theme != "system" {
-		response.Fail(w, "Недопустимое значение темы")
-		return
+	validate := validator.New()
+	err = validate.Struct(data)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			response.Fail(w, fmt.Sprintf("Ошибка валидации поля: %s", err.Field()))
+			return
+		}
 	}
-	_, err := s.userClient.UpdateTheme(r.Context(), &userPb.UpdateThemeRequest{
+
+	_, err = s.userClient.UpdateTheme(r.Context(), &userPb.UpdateThemeRequest{
 		Id:    r.Context().Value("user_id").(string),
-		Theme: theme,
+		Theme: data.Theme,
 	})
 	if err != nil {
 		log.Printf("Error updating user theme: %v\n", err)
@@ -109,18 +128,26 @@ func (s *Server) UserUpdateTheme(w http.ResponseWriter, r *http.Request) {
 	response.Success(w, "Тема успешно изменен", nil)
 }
 func (s *Server) UserUpdateLang(w http.ResponseWriter, r *http.Request) {
-	lang := r.FormValue("lang")
-	if lang == "" {
-		response.Fail(w, "Не указан язык")
+	type Data struct {
+		Lang string `json:"lang" valid:"required,oneof=ru en kz"`
+	}
+	var data Data
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		response.Fail(w, "Ошибка при десериализации тела запроса")
 		return
 	}
-	if lang != "ru" && lang != "en" && lang != "kz" {
-		response.Fail(w, "Недопустимое значение языка")
-		return
+	validate := validator.New()
+	err = validate.Struct(data)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			response.Fail(w, fmt.Sprintf("Ошибка валидации поля: %s", err.Field()))
+			return
+		}
 	}
-	_, err := s.userClient.UpdateLang(r.Context(), &userPb.UpdateLangRequest{
+	_, err = s.userClient.UpdateLang(r.Context(), &userPb.UpdateLangRequest{
 		Id:   r.Context().Value("user_id").(string),
-		Lang: lang,
+		Lang: data.Lang,
 	})
 	if err != nil {
 		log.Printf("Error updating user language: %v\n", err)
@@ -131,14 +158,26 @@ func (s *Server) UserUpdateLang(w http.ResponseWriter, r *http.Request) {
 
 }
 func (s *Server) UserUpdateEmail(w http.ResponseWriter, r *http.Request) {
-	code := r.FormValue("code")
-	if code == "" {
-		response.Fail(w, "Не указан код")
+	type Data struct {
+		Code string `json:"code" valid:"required"`
+	}
+	var data Data
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		response.Fail(w, "Ошибка при десериализации тела запроса")
 		return
 	}
-	_, err := s.userClient.UpdateEmail(r.Context(), &userPb.UpdateEmailRequest{
+	validate := validator.New()
+	err = validate.Struct(data)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			response.Fail(w, fmt.Sprintf("Ошибка валидации поля: %s", err.Field()))
+			return
+		}
+	}
+	_, err = s.userClient.UpdateEmail(r.Context(), &userPb.UpdateEmailRequest{
 		UserId: r.Context().Value("user_id").(string),
-		Code:   code,
+		Code:   data.Code,
 	})
 	if err != nil {
 		log.Printf("Error updating user email: %v\n", err)
@@ -148,14 +187,21 @@ func (s *Server) UserUpdateEmail(w http.ResponseWriter, r *http.Request) {
 	response.Success(w, "Электронная почта успешно изменена", nil)
 }
 func (s *Server) UserUpdateEmailSendCode(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	if email == "" {
-		response.Fail(w, "Не указана электронная почта")
+	type Data struct {
+		Email string `json:"email" valid:"required,email"`
+	}
+	var data Data
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		response.Fail(w, "Ошибка при десериализации тела запроса")
 		return
 	}
-	_, err := s.userClient.UpdateEmailSendCode(r.Context(), &userPb.UpdateEmailSendCodeRequest{
+	validate := validator.New()
+	err = validate.Struct(data)
+
+	_, err = s.userClient.UpdateEmailSendCode(r.Context(), &userPb.UpdateEmailSendCodeRequest{
 		UserId: r.Context().Value("user_id").(string),
-		Email:  email,
+		Email:  data.Email,
 	})
 	if err != nil {
 		log.Printf("Error sending email change code: %v\n", err)

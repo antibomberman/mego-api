@@ -7,40 +7,38 @@ import (
 	"github.com/antibomberman/mego-api/pkg/response"
 	postPb "github.com/antibomberman/mego-protos/gen/go/post"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-playground/validator/v10"
 	"io"
 	"net/http"
-	"strconv"
 )
 
 func (s *Server) PostList(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.URL.Query().Get("page_size"))
-	if r.URL.Query().Get("page_size") == "" {
-		response.Fail(w, "Не указан размер страницы")
-		return
+	type Data struct {
+		PageSize  int32  `json:"page_size" validate:"required"`
+		PageToken string `json:"page_token"`
+		Search    string `json:"search"`
+		Sort      int    `json:"sort" validate:"gte=0,lte=3"`
 	}
-	pageSize, err := strconv.Atoi(r.URL.Query().Get("page_size"))
+	var data Data
+	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		response.Fail(w, "Неверный размер страницы")
+		response.Fail(w, "Ошибка при десериализации тела запроса")
 		return
 	}
-	fmt.Println("Размер страницы: ", pageSize)
-
-	pageToken := r.URL.Query().Get("page_token")
-	search := r.URL.Query().Get("search")
-	sortStr := r.URL.Query().Get("sort")
-	sort := 0
-	if sortStr != "" {
-		if sortStr != "0" && sortStr != "1" {
-			response.Fail(w, "Неверный порядок сорти")
-		} else {
-			sort, _ = strconv.Atoi(sortStr)
+	validate := validator.New()
+	err = validate.Struct(data)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			response.Fail(w, fmt.Sprintf("Ошибка валидации поля: %s", err.Field()))
+			return
 		}
 	}
+
 	posts, err := s.postClient.FindPost(r.Context(), &postPb.FindPostRequest{
-		PageSize:  int32(pageSize),
-		PageToken: pageToken,
-		Search:    search,
-		SortOrder: postPb.SortOrder(sort),
+		PageSize:  data.PageSize,
+		PageToken: data.PageToken,
+		Search:    data.Search,
+		SortOrder: postPb.SortOrder(data.Sort),
 	})
 	if err != nil {
 		response.Fail(w, "Ошибка получения постов")
@@ -51,22 +49,33 @@ func (s *Server) PostList(w http.ResponseWriter, r *http.Request) {
 
 }
 func (s *Server) PostMyList(w http.ResponseWriter, r *http.Request) {
-	pageSize, err := strconv.Atoi(chi.URLParam(r, "page_size"))
-	if err != nil || pageSize <= 0 {
-		pageSize = 10
+	type Data struct {
+		PageSize  int32  `json:"page_size" validate:"required,gte=10,lte=100"`
+		PageToken string `json:"page_token"`
+		Search    string `json:"search"`
+		Sort      int    `json:"sort" validate:"gte=0,lte=3"`
 	}
-	pageToken := chi.URLParam(r, "page_token")
-	search := chi.URLParam(r, "search")
-	sort, err := strconv.Atoi(chi.URLParam(r, "sort"))
+	var data Data
+	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		sort = 0
+		response.Fail(w, "Ошибка при десериализации тела запроса")
+		return
 	}
+	validate := validator.New()
+	err = validate.Struct(data)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			response.Fail(w, fmt.Sprintf("Ошибка валидации поля: %s", err.Field()))
+			return
+		}
+	}
+
 	posts, err := s.postClient.GetByAuthor(r.Context(), &postPb.GetByAuthorRequest{
 		AuthorId:  r.Context().Value("user_id").(string),
-		PageSize:  int32(pageSize),
-		PageToken: pageToken,
-		Search:    search,
-		SortOrder: postPb.SortOrder(sort),
+		PageSize:  data.PageSize,
+		PageToken: data.PageToken,
+		Search:    data.Search,
+		SortOrder: postPb.SortOrder(data.Sort),
 	})
 	if err != nil {
 		response.Fail(w, "Ошибка получения постов")
@@ -120,14 +129,12 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 			}
 			fmt.Printf("    Длина файла: %d байт\n", len(fileBytes))
 
-			// Декодируем base64
-			decodedContent, err := base64.StdEncoding.DecodeString(file.Data)
 			if err != nil {
 				fmt.Printf("Ошибка при декодировании файла: %v\n", err)
 				continue
 			}
 
-			contentType := http.DetectContentType(decodedContent)
+			contentType := http.DetectContentType(fileBytes)
 			file.ContentType = contentType
 
 			fmt.Printf("    ContentType: %s\n", contentType)
