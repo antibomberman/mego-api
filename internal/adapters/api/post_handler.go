@@ -79,59 +79,63 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 		Data        string `json:"data"` // base64 encoded
 		ContentType string `json:"content_type"`
 	}
-
 	type ContentItem struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
 		Files   []File `json:"files"`
 	}
-
 	type RequestBody struct {
 		Title    string        `json:"title"`
+		Type     int32         `json:"type"`
 		Contents []ContentItem `json:"contents"`
 	}
-
 	var reqBody RequestBody
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		response.Fail(w, "Ошибка при чтении тела запроса")
+		response.Fail(w, "Ошибка при чтении тела запроса: "+err.Error())
 		return
 	}
 
 	err = json.Unmarshal(body, &reqBody)
 	if err != nil {
-		response.Fail(w, "Ошибка при разборе JSON")
+		response.Fail(w, "Ошибка при разборе JSON: "+err.Error())
 		return
 	}
-
+	pbData := &postPb.CreatePostRequest{
+		Title:    reqBody.Title,
+		AuthorId: r.Context().Value("user_id").(string),
+		Type:     postPb.PostType(reqBody.Type),
+		Contents: make([]*postPb.PostContentCreateOrUpdate, len(reqBody.Contents)),
+	}
 	for i, item := range reqBody.Contents {
-		fmt.Printf("Элемент %d:\n", i)
-		fmt.Printf("  Заголовок: %s\n", item.Title)
-		fmt.Printf("  Содержание: %s\n", item.Content)
-
+		pbData.Contents[i] = &postPb.PostContentCreateOrUpdate{
+			Title:   item.Title,
+			Content: item.Content,
+			Files:   make([]*postPb.PostContentFileCreateOrUpdate, len(item.Files)),
+		}
 		for j, file := range item.Files {
-			fmt.Printf("    Файл %d: %s\n", j, file.FileName)
 			fileBytes, err := base64.StdEncoding.DecodeString(file.Data)
 			if err != nil {
 				fmt.Printf("Ошибка при декодировании файла: %v\n", err)
 				continue
 			}
-			fmt.Printf("    Длина файла: %d байт\n", len(fileBytes))
-
-			if err != nil {
-				fmt.Printf("Ошибка при декодировании файла: %v\n", err)
-				continue
-			}
-
 			contentType := http.DetectContentType(fileBytes)
 			file.ContentType = contentType
-
-			fmt.Printf("    ContentType: %s\n", contentType)
-
+			pbData.Contents[i].Files[j] = &postPb.PostContentFileCreateOrUpdate{
+				FileName:    file.FileName,
+				ContentType: contentType,
+				Data:        fileBytes,
+			}
 		}
 	}
 
-	response.Success(w, "Данные успешно обработаны", reqBody)
+	createdPost, err := s.postClient.CreatePost(r.Context(), pbData)
+	if err != nil {
+		response.Fail(w, "Ошибка создания поста: "+err.Error())
+		return
+	}
+
+	response.Success(w, "Данные успешно обработаны", createdPost)
 }
 
 func (s *Server) PostShow(w http.ResponseWriter, r *http.Request) {
