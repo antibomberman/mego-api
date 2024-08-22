@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"github.com/antibomberman/mego-api/pkg/response"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
@@ -13,13 +14,13 @@ func JwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "Authorization header is required", http.StatusUnauthorized)
+			response.Fail(w, "Invalid authorization header")
 			return
 		}
 
 		bearerToken := strings.Split(authHeader, " ")
 		if len(bearerToken) != 2 {
-			http.Error(w, "Invalid token format", http.StatusUnauthorized)
+			response.Fail(w, "Token not provided")
 			return
 		}
 
@@ -29,13 +30,13 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		})
 
 		if err != nil || !token.Valid {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			response.Fail(w, "Invalid token")
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+			response.Fail(w, "Invalid token claims")
 			return
 		}
 
