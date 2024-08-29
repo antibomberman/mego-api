@@ -8,7 +8,6 @@ import (
 	postPb "github.com/antibomberman/mego-protos/gen/go/post"
 	"github.com/go-chi/chi/v5"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -107,7 +106,8 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 	for i, item := range reqBody.Contents {
 		fileBytes, err := base64.StdEncoding.DecodeString(item.Image.Data)
 		if err != nil {
-			log.Printf("Error decoding base64: %v\n", err)
+			response.Fail(w, "Ошибка при декодировании изображения: "+err.Error())
+			return
 		}
 		pbData.Contents[i] = &postPb.PostContentCreateOrUpdate{
 			Title:       item.Title,
