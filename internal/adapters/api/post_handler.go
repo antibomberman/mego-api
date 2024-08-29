@@ -8,6 +8,7 @@ import (
 	postPb "github.com/antibomberman/mego-protos/gen/go/post"
 	"github.com/go-chi/chi/v5"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -75,17 +76,15 @@ func (s *Server) PostMyList(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 	type File struct {
-		FileName    string `json:"file_name"`
-		Data        string `json:"data"` // base64 encoded
-		ContentType string `json:"content_type"`
+		FileName string `json:"file_name"`
+		Data     string `json:"data"` // base64 encoded
 	}
 	type ContentItem struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-		Files   []File `json:"files"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Image       File   `json:"files"`
 	}
 	type RequestBody struct {
-		Title    string        `json:"title"`
 		Type     int32         `json:"type"`
 		Contents []ContentItem `json:"contents"`
 	}
@@ -95,37 +94,28 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 		response.Fail(w, "Ошибка при чтении тела запроса: "+err.Error())
 		return
 	}
-
 	err = json.Unmarshal(body, &reqBody)
 	if err != nil {
 		response.Fail(w, "Ошибка при разборе JSON: "+err.Error())
 		return
 	}
 	pbData := &postPb.CreatePostRequest{
-		Title:    reqBody.Title,
 		AuthorId: r.Context().Value("user_id").(string),
 		Type:     postPb.PostType(reqBody.Type),
 		Contents: make([]*postPb.PostContentCreateOrUpdate, len(reqBody.Contents)),
 	}
 	for i, item := range reqBody.Contents {
-		pbData.Contents[i] = &postPb.PostContentCreateOrUpdate{
-			Title:   item.Title,
-			Content: item.Content,
-			Files:   make([]*postPb.PostContentFileCreateOrUpdate, len(item.Files)),
+		fileBytes, err := base64.StdEncoding.DecodeString(item.Image.Data)
+		if err != nil {
+			log.Printf("Error decoding base64: %v\n", err)
 		}
-		for j, file := range item.Files {
-			fileBytes, err := base64.StdEncoding.DecodeString(file.Data)
-			if err != nil {
-				fmt.Printf("Ошибка при декодировании файла: %v\n", err)
-				continue
-			}
-			contentType := http.DetectContentType(fileBytes)
-			file.ContentType = contentType
-			pbData.Contents[i].Files[j] = &postPb.PostContentFileCreateOrUpdate{
-				FileName:    file.FileName,
-				ContentType: contentType,
-				Data:        fileBytes,
-			}
+		pbData.Contents[i] = &postPb.PostContentCreateOrUpdate{
+			Title:       item.Title,
+			Description: item.Description,
+			File: &postPb.FileCreateOrUpdate{
+				FileName: item.Image.FileName,
+				Data:     fileBytes,
+			},
 		}
 	}
 
