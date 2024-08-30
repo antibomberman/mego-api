@@ -3,7 +3,7 @@ module github.com/antibomberman/mego-api
 go 1.22.5
 
 require (
-	github.com/antibomberman/mego-protos v0.0.88
+	github.com/antibomberman/mego-protos v0.0.91
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	google.golang.org/grpc v1.65.0

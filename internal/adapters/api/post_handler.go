@@ -8,6 +8,7 @@ import (
 	postPb "github.com/antibomberman/mego-protos/gen/go/post"
 	"github.com/go-chi/chi/v5"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -81,10 +82,11 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 	type ContentItem struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
-		Image       File   `json:"files"`
+		Image       File   `json:"image"`
 	}
 	type RequestBody struct {
 		Type     int32         `json:"type"`
+		Image    File          `json:"image"`
 		Contents []ContentItem `json:"contents"`
 	}
 	var reqBody RequestBody
@@ -98,24 +100,40 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 		response.Fail(w, "Ошибка при разборе JSON: "+err.Error())
 		return
 	}
+	file := postPb.FileCreateOrUpdate{}
+	if reqBody.Image.Data != "" {
+		fileBytes, err := base64.StdEncoding.DecodeString(reqBody.Image.Data)
+
+		if err != nil {
+			log.Printf("Error decoding image data: %v", err)
+			response.Fail(w, "Ошибка при декодировании изображения: "+err.Error())
+			return
+		}
+		file.Data = fileBytes
+		file.FileName = reqBody.Image.FileName
+	}
 	pbData := &postPb.CreatePostRequest{
 		AuthorId: r.Context().Value("user_id").(string),
 		Type:     postPb.PostType(reqBody.Type),
+		Image:    &file,
 		Contents: make([]*postPb.PostContentCreateOrUpdate, len(reqBody.Contents)),
 	}
 	for i, item := range reqBody.Contents {
-		fileBytes, err := base64.StdEncoding.DecodeString(item.Image.Data)
-		if err != nil {
-			response.Fail(w, "Ошибка при декодировании изображения: "+err.Error())
-			return
+		file := postPb.FileCreateOrUpdate{}
+		if item.Image.Data != "" {
+			fileBytes, err := base64.StdEncoding.DecodeString(item.Image.Data)
+			if err != nil {
+				log.Printf("Error decoding image data: %v", err)
+				response.Fail(w, "Ошибка при декодировании изображения: "+err.Error())
+				return
+			}
+			file.Data = fileBytes
+			file.FileName = item.Image.FileName
 		}
 		pbData.Contents[i] = &postPb.PostContentCreateOrUpdate{
 			Title:       item.Title,
 			Description: item.Description,
-			File: &postPb.FileCreateOrUpdate{
-				FileName: item.Image.FileName,
-				Data:     fileBytes,
-			},
+			File:        &file,
 		}
 	}
 

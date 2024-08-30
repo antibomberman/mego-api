@@ -20,6 +20,8 @@ github.com/antibomberman/mego-protos v0.0.72 h1:4XV9Opg3kCdNciQx+ZejDwq8GfBMpjsF
 github.com/antibomberman/mego-protos v0.0.72/go.mod h1:VPMBG3z+MOzBSAyIqD1tWXYVDSv20kHozawJ7Tc8F7Y=
 github.com/antibomberman/mego-protos v0.0.88 h1:zv5FJZduyXm/NUZFBbvgnK1vJa6W++4JGjeQ3V1fDMw=
 github.com/antibomberman/mego-protos v0.0.88/go.mod h1:VPMBG3z+MOzBSAyIqD1tWXYVDSv20kHozawJ7Tc8F7Y=
+github.com/antibomberman/mego-protos v0.0.91 h1:3T+7P73AHMSkN/80gtx8XY1wYJdYY56jOoA6siBDBE0=
+github.com/antibomberman/mego-protos v0.0.91/go.mod h1:VPMBG3z+MOzBSAyIqD1tWXYVDSv20kHozawJ7Tc8F7Y=
 github.com/gabriel-vasile/mimetype v1.4.3 h1:in2uUcidCuFcDKtdcBxlR0rJ1+fsokWf+uqxgUFjbI0=
 github.com/gabriel-vasile/mimetype v1.4.3/go.mod h1:d8uq/6HKRL6CGdk+aubisF/M5GcPfT7nKyLpA0lbSSk=
 github.com/go-chi/chi/v5 v5.1.0 h1:acVI1TYaD+hhedDJ3r54HyA6sExp3HfXq7QWEEY/xMw=
