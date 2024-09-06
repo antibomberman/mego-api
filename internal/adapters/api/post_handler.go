@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"github.com/antibomberman/mego-api/pkg/response"
 	postPb "github.com/antibomberman/mego-protos/gen/go/post"
 	"github.com/go-chi/chi/v5"
@@ -14,13 +13,13 @@ import (
 )
 
 func (s *Server) PostList(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.URL.Query().Get("page_size"))
 	if r.URL.Query().Get("page_size") == "" {
 		response.Fail(w, "Не указан размер страницы")
 		return
 	}
 	pageSize, err := strconv.Atoi(r.URL.Query().Get("page_size"))
 	if err != nil {
+		log.Printf("Invalid page size: %v\n", err)
 		response.Fail(w, "Неверный размер страницы")
 		return
 	}
@@ -42,10 +41,10 @@ func (s *Server) PostList(w http.ResponseWriter, r *http.Request) {
 		SortOrder: postPb.SortOrder(sort),
 	})
 	if err != nil {
+		log.Printf("Error getting posts: %v\n", err)
 		response.Fail(w, "Ошибка получения постов")
 		return
 	}
-	fmt.Printf("Count: %d\n", len(posts.Posts))
 	response.Success(w, "Посты успешно получены", posts)
 
 }
@@ -85,9 +84,12 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 		Image       File   `json:"image"`
 	}
 	type RequestBody struct {
-		Type     int32         `json:"type"`
-		Image    File          `json:"image"`
-		Contents []ContentItem `json:"contents"`
+		Title       string        `json:"title"`
+		Description string        `json:"description"`
+		Type        int32         `json:"type"`
+		Image       File          `json:"image"`
+		Categories  []string      `json:"categories"`
+		Contents    []ContentItem `json:"contents"`
 	}
 	var reqBody RequestBody
 	body, err := io.ReadAll(r.Body)
@@ -113,10 +115,13 @@ func (s *Server) PostCreate(w http.ResponseWriter, r *http.Request) {
 		file.FileName = reqBody.Image.FileName
 	}
 	pbData := &postPb.CreatePostRequest{
-		AuthorId: r.Context().Value("user_id").(string),
-		Type:     postPb.PostType(reqBody.Type),
-		Image:    &file,
-		Contents: make([]*postPb.PostContentCreateOrUpdate, len(reqBody.Contents)),
+		AuthorId:    r.Context().Value("user_id").(string),
+		Title:       reqBody.Title,
+		Description: reqBody.Description,
+		Type:        postPb.PostType(reqBody.Type),
+		Image:       &file,
+		Categories:  reqBody.Categories,
+		Contents:    make([]*postPb.PostContentCreateOrUpdate, len(reqBody.Contents)),
 	}
 	for i, item := range reqBody.Contents {
 		file := postPb.FileCreateOrUpdate{}
